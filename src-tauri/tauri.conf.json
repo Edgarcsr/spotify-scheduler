@@ -12,9 +12,11 @@
   "app": {
     "windows": [
       {
-        "title": "spotify-scheduler",
-        "width": 800,
-        "height": 600
+        "title": "Spotify Scheduler",
+        "width": 1100,
+        "height": 760,
+        "minWidth": 800,
+        "minHeight": 560
       }
     ],
     "security": {

@@ -1,51 +1,181 @@
-import { useState } from "react";
-import reactLogo from "./assets/react.svg";
-import { invoke } from "@tauri-apps/api/core";
-import "./App.css";
+import { useEffect, useState, useRef } from "react"
+import { listen } from "@tauri-apps/api/event"
+import { toast } from "sonner"
+
+import { AppSidebar } from "@/components/app-sidebar"
+import { LibraryView } from "@/components/library-view"
+import { ScheduleDialog } from "@/components/schedule-dialog"
+import { SpotifyConnectDialog } from "@/components/spotify-connect-dialog"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
+import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
+import { useNow } from "@/hooks/use-now"
+import { useSchedules } from "@/hooks/use-schedules"
+import { useSpotify } from "@/hooks/use-spotify"
+import { api, errorMessage, type ScheduleFiredEvent } from "@/lib/api"
+import type { Schedule, SpotifyItem } from "@/lib/types"
 
 function App() {
-  const [greetMsg, setGreetMsg] = useState("");
-  const [name, setName] = useState("");
+  const { schedules, save, remove, toggle, duplicate } = useSchedules()
+  const spotify = useSpotify()
+  const now = useNow()
 
-  async function greet() {
-    // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
-    setGreetMsg(await invoke("greet", { name }));
+  const [dialogOpen, setDialogOpen] = useState(false)
+  const [editing, setEditing] = useState<Schedule | null>(null)
+  const [prefill, setPrefill] = useState<SpotifyItem | null>(null)
+  const [pendingDelete, setPendingDelete] = useState<Schedule | null>(null)
+  const [connectOpen, setConnectOpen] = useState(false)
+
+  // Disparos do agendador em background.
+  useEffect(() => {
+    const unlisten = listen<ScheduleFiredEvent>("schedule-fired", ({ payload }) => {
+      if (payload.ok) toast.success(payload.name, { description: payload.message })
+      else toast.error(`${payload.name} falhou`, { description: payload.message })
+    })
+    return () => {
+      unlisten.then((fn) => fn())
+    }
+  }, [])
+
+  // Atalhos de teclado: Ctrl+N novo, Ctrl+R testar agora.
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.ctrlKey && e.key === "n") {
+        e.preventDefault()
+        openNew()
+      }
+    }
+    window.addEventListener("keydown", onKeyDown)
+    return () => window.removeEventListener("keydown", onKeyDown)
+  }, [])
+
+  function openNew(item: SpotifyItem | null = null) {
+    setEditing(null)
+    setPrefill(item)
+    setDialogOpen(true)
+  }
+
+  function openEdit(schedule: Schedule) {
+    setEditing(schedule)
+    setPrefill(null)
+    setDialogOpen(true)
+  }
+
+  function handleSave(schedule: Schedule) {
+    const isNew = !schedules.some((s) => s.id === schedule.id)
+    save(schedule)
+    toast.success(isNew ? "Agendamento criado" : "Agendamento salvo", {
+      description: `${schedule.name} às ${schedule.time}`,
+    })
+  }
+
+  function addTo(schedule: Schedule, item: SpotifyItem) {
+    // "Tocar" só tem um item, então trocar é o equivalente a adicionar.
+    if (schedule.mode === "play") {
+      save({ ...schedule, items: [item] })
+      toast.success(`${schedule.name} vai tocar ${item.name}`)
+    } else {
+      save({ ...schedule, items: [...schedule.items, item] })
+      toast.success(`${item.name} adicionado a ${schedule.name}`)
+    }
+  }
+
+  function runNow(schedule: Schedule) {
+    toast.promise(api.runScheduleNow(schedule), {
+      loading: `Executando "${schedule.name}"…`,
+      success: (message) => message,
+      error: (e) => errorMessage(e),
+    })
+  }
+
+  const lastDeleted = useRef<Schedule | null>(null)
+
+  function confirmDelete() {
+    if (!pendingDelete) return
+    lastDeleted.current = pendingDelete
+    remove(pendingDelete.id)
+    setPendingDelete(null)
+    toast(`"${pendingDelete.name}" excluído`, {
+      action: {
+        label: "Desfazer",
+        onClick: () => {
+          if (lastDeleted.current) {
+            save(lastDeleted.current)
+            lastDeleted.current = null
+          }
+        },
+      },
+      duration: 5000,
+    })
   }
 
   return (
-    <main className="container">
-      <h1>Welcome to Tauri + React</h1>
+    <SidebarProvider style={{ "--sidebar-width": "19rem" } as React.CSSProperties}>
+      <AppSidebar
+        schedules={schedules}
+        now={now}
+        spotify={spotify.status}
+        onOpenAccount={() => setConnectOpen(true)}
+        onNew={() => openNew()}
+        onEdit={openEdit}
+        onToggle={(schedule, enabled) => toggle(schedule.id, enabled)}
+        onDuplicate={(schedule) => duplicate(schedule.id)}
+        onRunNow={runNow}
+        onDelete={setPendingDelete}
+      />
 
-      <div className="row">
-        <a href="https://vite.dev" target="_blank">
-          <img src="/vite.svg" className="logo vite" alt="Vite logo" />
-        </a>
-        <a href="https://tauri.app" target="_blank">
-          <img src="/tauri.svg" className="logo tauri" alt="Tauri logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <p>Click on the Tauri, Vite, and React logos to learn more.</p>
-
-      <form
-        className="row"
-        onSubmit={(e) => {
-          e.preventDefault();
-          greet();
-        }}
-      >
-        <input
-          id="greet-input"
-          onChange={(e) => setName(e.currentTarget.value)}
-          placeholder="Enter a name..."
+      <SidebarInset>
+        <LibraryView
+          connected={spotify.status ? spotify.connected : null}
+          schedules={schedules}
+          onConnect={() => setConnectOpen(true)}
+          onSchedule={openNew}
+          onAddTo={addTo}
         />
-        <button type="submit">Greet</button>
-      </form>
-      <p>{greetMsg}</p>
-    </main>
-  );
+      </SidebarInset>
+
+      <ScheduleDialog
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        schedule={editing}
+        prefill={prefill}
+        onSave={handleSave}
+      />
+
+      <SpotifyConnectDialog
+        open={connectOpen}
+        onOpenChange={setConnectOpen}
+        status={spotify.status}
+        onLogin={spotify.login}
+        onLogout={spotify.logout}
+      />
+
+      <AlertDialog open={!!pendingDelete} onOpenChange={(open) => !open && setPendingDelete(null)}>
+        <AlertDialogContent size="sm">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir agendamento?</AlertDialogTitle>
+            <AlertDialogDescription>
+              "{pendingDelete?.name}" vai parar de disparar. Isso não pode ser desfeito.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction variant="destructive" onClick={confirmDelete}>
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </SidebarProvider>
+  )
 }
 
-export default App;
+export default App
