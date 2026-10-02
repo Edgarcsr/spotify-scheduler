@@ -12,6 +12,8 @@ permissions:
 jobs:
   build:
     runs-on: windows-latest
+    env:
+      RELEASE_TAG: ${{ github.ref_type == 'tag' && github.ref_name || format('v{0}', github.run_number) }}
 
     steps:
       - name: Checkout
@@ -28,7 +30,7 @@ jobs:
       - name: Cache Rust build
         uses: Swatinem/rust-cache@v2
         with:
-          workspaces: src-tauri/target
+          workspaces: src-tauri -> target
 
       - name: Install dependencies
         run: bun install --frozen-lockfile
@@ -38,8 +40,18 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tagName: ${{ github.ref_type == 'tag' && github.ref_name || format('v{0}', github.run_number) }}
-          releaseName: "Spotify Scheduler ${{ github.ref_type == 'tag' && github.ref_name || format('v{0}', github.run_number) }}"
-          releaseBody: "Baixe o instalador (.exe ou .msi) abaixo para instalar o Spotify Scheduler."
+          tagName: ${{ env.RELEASE_TAG }}
+          releaseName: "Spotify Scheduler ${{ env.RELEASE_TAG }}"
+          releaseBody: "Baixe o instalador (setup.exe ou .msi) abaixo para instalar o Spotify Scheduler, ou a versão portátil (portable.exe), que roda sem instalar."
           releaseDraft: ${{ github.ref_type != 'tag' }}
           prerelease: false
+
+      - name: Upload portable exe
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          VERSION=$(node -p "require('./src-tauri/tauri.conf.json').version")
+          PORTABLE="spotify-scheduler_${VERSION}_x64-portable.exe"
+          cp src-tauri/target/release/spotify-scheduler.exe "$PORTABLE"
+          gh release upload "$RELEASE_TAG" "$PORTABLE" --clobber
