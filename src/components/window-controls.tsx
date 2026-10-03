@@ -1,13 +1,15 @@
 import { useEffect, useState } from "react"
 import { getCurrentWindow } from "@tauri-apps/api/window"
+import { CopyIcon, MinusIcon, SquareIcon, XIcon } from "lucide-react"
 
 import { Hint } from "@/components/hint"
+import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 
 const appWindow = getCurrentWindow()
 
-// Botões de legenda no estilo do Windows 11: encostados no canto superior direito
-// (dá pra "jogar" o mouse no canto e acertar o fechar) e com glifos finos de 10px.
+// Controles da janela como botões ghost do app, no mesmo tamanho dos outros botões de ícone
+// do cabeçalho, em vez de imitar os botões de legenda do Windows.
 export function WindowControls({ className }: { className?: string }) {
   const [maximized, setMaximized] = useState(false)
 
@@ -22,53 +24,35 @@ export function WindowControls({ className }: { className?: string }) {
   }, [])
 
   return (
-    <div className={cn("flex h-full shrink-0", className)}>
+    <div className={cn("flex shrink-0 items-center gap-0.5 pr-3", className)}>
       <CaptionButton label="Minimizar" onClick={() => appWindow.minimize()}>
-        <path d="M0 5.5h10" />
+        <MinusIcon />
       </CaptionButton>
       <CaptionButton label={maximized ? "Restaurar" : "Maximizar"} onClick={() => appWindow.toggleMaximize()}>
-        {maximized ? (
-          <>
-            <rect x="0.5" y="2.5" width="7" height="7" rx="1" />
-            <path d="M2.5 2.5V1.5a1 1 0 0 1 1-1h5a1 1 0 0 1 1 1v5a1 1 0 0 1-1 1h-1" />
-          </>
-        ) : (
-          <rect x="0.5" y="0.5" width="9" height="9" rx="1" />
-        )}
+        {/* O "restaurar" do Windows são dois quadrados sobrepostos; o CopyIcon tem esse desenho. */}
+        {maximized ? <CopyIcon className="size-3.5" /> : <SquareIcon className="size-3.5" />}
       </CaptionButton>
       <CaptionButton
         label="Fechar para a bandeja"
         onClick={() => appWindow.close()}
-        className="hover:bg-[#c42b1c] hover:text-white active:bg-[#c42b1c]/90"
+        className="hover:bg-destructive/15 hover:text-destructive dark:hover:bg-destructive/20"
       >
-        <path d="M0.5 0.5l9 9M9.5 0.5l-9 9" />
+        <XIcon />
       </CaptionButton>
     </div>
   )
 }
 
-function CaptionButton({
-  label,
-  className,
-  children,
-  ...props
-}: { label: string } & React.ComponentProps<"button">) {
+function CaptionButton({ label, className, ...props }: { label: string } & React.ComponentProps<typeof Button>) {
   return (
     <Hint label={label}>
-      <button
-        type="button"
+      <Button
+        variant="ghost"
+        size="icon"
         aria-label={label}
-        tabIndex={-1}
-        className={cn(
-          "flex h-full w-12 items-center justify-center text-muted-foreground transition-colors hover:bg-foreground/[0.08] hover:text-foreground active:bg-foreground/[0.12]",
-          className,
-        )}
+        className={cn("text-muted-foreground", className)}
         {...props}
-      >
-        <svg viewBox="0 0 10 10" className="size-2.5" fill="none" stroke="currentColor" strokeWidth="1" aria-hidden>
-          {children}
-        </svg>
-      </button>
+      />
     </Hint>
   )
 }
