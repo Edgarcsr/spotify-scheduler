@@ -12,6 +12,7 @@ import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupInput } from "
 import { Separator } from "@/components/ui/separator"
 import { SidebarTrigger } from "@/components/ui/sidebar"
 import { Skeleton } from "@/components/ui/skeleton"
+import { useGridFlip } from "@/hooks/use-grid-flip"
 import { useSpotifySearch } from "@/hooks/use-spotify-search"
 import type { Schedule, SpotifyItem } from "@/lib/types"
 import { cn } from "@/lib/utils"
@@ -162,13 +163,13 @@ export function LibraryView({
           <div className="flex flex-col gap-8">
             {tracks.length > 0 && (
               <Section title="Músicas">
-                <div className="grid gap-x-4 lg:grid-cols-2">
+                <TrackGrid>
                   {tracks.map((item) => (
                     <ItemMenu key={item.uri} item={item} {...menu}>
                       <TrackRow item={item} />
                     </ItemMenu>
                   ))}
-                </div>
+                </TrackGrid>
               </Section>
             )}
             {playlists.length > 0 && (
@@ -209,8 +210,24 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   )
 }
 
+// Quando as colunas mudam (janela redimensionada, fila recolhida), os cards
+// deslizam até a nova posição em vez de pular (ver useGridFlip).
 function CardGrid({ children }: { children: React.ReactNode }) {
-  return <div className="-mx-2 grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))]">{children}</div>
+  const parent = useGridFlip<HTMLDivElement>()
+  return (
+    <div ref={parent} className="relative -mx-2 grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))]">
+      {children}
+    </div>
+  )
+}
+
+function TrackGrid({ children }: { children: React.ReactNode }) {
+  const parent = useGridFlip<HTMLDivElement>()
+  return (
+    <div ref={parent} className="relative grid gap-x-4 lg:grid-cols-2">
+      {children}
+    </div>
+  )
 }
 
 // Os dois "cards" abaixo são botões: o Radix injeta onClick/aria via asChild do ItemMenu.
