@@ -7,6 +7,7 @@ import { Hint } from "@/components/hint"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
+  DialogClose,
   DialogContent,
   DialogDescription,
   DialogFooter,
@@ -45,23 +46,62 @@ export function SpotifyConnectDialog({ open, onOpenChange, status, onLogin, onLo
 
 function Connected({ status, onLogout }: { status: SpotifyStatus; onLogout: () => Promise<void> }) {
   const [busy, setBusy] = useState(false)
+  const [copied, setCopied] = useState(false)
+  const user = status.user
+  const name = user?.displayName ?? user?.id ?? ""
+
+  async function copyClientId() {
+    await navigator.clipboard.writeText(status.clientId ?? "")
+    setCopied(true)
+    setTimeout(() => setCopied(false), 1500)
+  }
 
   return (
     <>
       <DialogHeader>
         <DialogTitle>Conta do Spotify</DialogTitle>
-        <DialogDescription>Os agendamentos vão tocar nesta conta.</DialogDescription>
+        <DialogDescription>Os agendamentos tocam nesta conta.</DialogDescription>
       </DialogHeader>
-      <div className="flex items-center gap-3 rounded-lg border p-3">
-        <div className="flex size-10 items-center justify-center rounded-full bg-primary/15 text-primary">
-          <UserIcon className="size-5" />
-        </div>
-        <div className="flex min-w-0 flex-col">
-          <span className="truncate font-medium">{status.user?.displayName ?? status.user?.id}</span>
-          <span className="truncate text-xs text-muted-foreground">Client ID {status.clientId}</span>
+
+      <div className="flex items-center gap-4 py-2">
+        {user?.imageUrl ? (
+          <img src={user.imageUrl} alt="" className="size-14 shrink-0 rounded-full object-cover ring-2 ring-foreground/10" />
+        ) : (
+          <span className="flex size-14 shrink-0 items-center justify-center rounded-full bg-primary/15 text-xl font-semibold text-primary uppercase">
+            {name.charAt(0) || <UserIcon className="size-6" />}
+          </span>
+        )}
+        <div className="flex min-w-0 flex-col gap-0.5">
+          <span className="truncate text-base font-semibold">{name}</span>
+          <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+            <span className="size-1.5 rounded-full bg-[#3DCB6E]" aria-hidden />
+            Conectado
+          </span>
         </div>
       </div>
-      <DialogFooter>
+
+      {status.clientId && (
+        <Field>
+          <FieldLabel htmlFor="connected-client-id">Client ID</FieldLabel>
+          <InputGroup>
+            <InputGroupInput
+              id="connected-client-id"
+              readOnly
+              value={status.clientId}
+              className="font-mono text-xs text-muted-foreground"
+            />
+            <InputGroupAddon align="inline-end">
+              <Hint label={copied ? "Copiado" : "Copiar"}>
+                <InputGroupButton size="icon-xs" aria-label="Copiar Client ID" onClick={copyClientId}>
+                  {copied ? <CheckIcon /> : <CopyIcon />}
+                </InputGroupButton>
+              </Hint>
+            </InputGroupAddon>
+          </InputGroup>
+        </Field>
+      )}
+
+      <DialogFooter className="sm:justify-between">
         <Button
           variant="destructive"
           disabled={busy}
@@ -72,9 +112,12 @@ function Connected({ status, onLogout }: { status: SpotifyStatus; onLogout: () =
               .finally(() => setBusy(false))
           }}
         >
-          <LogOutIcon data-icon="inline-start" />
+          {busy ? <Loader2Icon data-icon="inline-start" className="animate-spin" /> : <LogOutIcon data-icon="inline-start" />}
           Desconectar
         </Button>
+        <DialogClose asChild>
+          <Button>Pronto</Button>
+        </DialogClose>
       </DialogFooter>
     </>
   )
