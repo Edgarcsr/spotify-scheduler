@@ -37,8 +37,9 @@ getrandom = "0.4.3"
 
 # Read the optimization guideline for more details: https://tauri.app/concept/size/#cargo-configuration
 [profile.release]
-codegen-units = 1
-lto = true
+# LTO "thin" + 16 codegen units: link bem mais rápido no CI, exe um pouco maior que com LTO "fat".
+codegen-units = 16
+lto = "thin"
 opt-level = 3
 panic = "abort"
 strip = true
