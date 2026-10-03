@@ -3,6 +3,7 @@ import { listen } from "@tauri-apps/api/event"
 import { toast } from "sonner"
 
 import { AppSidebar } from "@/components/app-sidebar"
+import { CommandPalette } from "@/components/command-palette"
 import { LibraryView } from "@/components/library-view"
 import { ScheduleDialog } from "@/components/schedule-dialog"
 import { SpotifyConnectDialog } from "@/components/spotify-connect-dialog"
@@ -33,6 +34,8 @@ function App() {
   const [prefill, setPrefill] = useState<SpotifyItem | null>(null)
   const [pendingDelete, setPendingDelete] = useState<Schedule | null>(null)
   const [connectOpen, setConnectOpen] = useState(false)
+  const [commandsOpen, setCommandsOpen] = useState(false)
+  const [query, setQuery] = useState("")
 
   // Disparos do agendador em background.
   useEffect(() => {
@@ -45,17 +48,38 @@ function App() {
     }
   }, [])
 
-  // Atalhos de teclado: Ctrl+N novo, Ctrl+R testar agora.
+  // Atalhos de teclado: Ctrl+N novo, Ctrl+K comandos.
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
       if (e.ctrlKey && e.key === "n") {
         e.preventDefault()
         openNew()
       }
+      if (e.ctrlKey && e.key === "k") {
+        e.preventDefault()
+        setCommandsOpen((open) => !open)
+      }
     }
     window.addEventListener("keydown", onKeyDown)
     return () => window.removeEventListener("keydown", onKeyDown)
   }, [])
+
+  // Sem o menu nativo do WebView (Recarregar, Inspecionar…) fora de campos de texto:
+  // num app de desktop ele denuncia o navegador. Em dev fica, pro Inspecionar.
+  useEffect(() => {
+    if (import.meta.env.DEV) return
+    function onContextMenu(e: MouseEvent) {
+      if ((e.target as HTMLElement).closest("input, textarea, [contenteditable=true]")) return
+      e.preventDefault()
+    }
+    document.addEventListener("contextmenu", onContextMenu)
+    return () => document.removeEventListener("contextmenu", onContextMenu)
+  }, [])
+
+  function searchSpotify(text: string) {
+    setQuery(text)
+    document.getElementById("library-search")?.focus()
+  }
 
   function openNew(item: SpotifyItem | null = null) {
     setEditing(null)
@@ -139,8 +163,27 @@ function App() {
           onConnect={() => setConnectOpen(true)}
           onSchedule={openNew}
           onAddTo={addTo}
+          query={query}
+          onQueryChange={setQuery}
+          onOpenCommands={() => setCommandsOpen(true)}
         />
       </SidebarInset>
+
+      <CommandPalette
+        open={commandsOpen}
+        onOpenChange={setCommandsOpen}
+        schedules={schedules}
+        now={now}
+        spotifyConnected={!!spotify.status?.user}
+        onOpenAccount={() => setConnectOpen(true)}
+        onSearchSpotify={searchSpotify}
+        onNew={() => openNew()}
+        onEdit={openEdit}
+        onToggle={(schedule, enabled) => toggle(schedule.id, enabled)}
+        onDuplicate={(schedule) => duplicate(schedule.id)}
+        onRunNow={runNow}
+        onDelete={setPendingDelete}
+      />
 
       <ScheduleDialog
         open={dialogOpen}

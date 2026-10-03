@@ -18,14 +18,9 @@ import { useTheme } from "next-themes"
 import appIcon from "@/assets/app-icon.svg"
 import { Hint } from "@/components/hint"
 import { ItemArtwork } from "@/components/item-artwork"
-
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+import { contextKit, dropdownKit, type MenuKit } from "@/components/menu-kit"
+import { ContextMenu, ContextMenuContent, ContextMenuTrigger } from "@/components/ui/context-menu"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import {
   Sidebar,
   SidebarContent,
@@ -160,104 +155,123 @@ function ScheduleMenu({
         const first = schedule.items[0]
         const isNext = index === 0
         return (
-          <div
-            key={schedule.id}
-            className={cn(
-              "group relative flex items-center gap-3 rounded-lg transition-all",
-              collapsed ? "p-1" : "p-2",
-              isNext ? "bg-primary/[0.06]" : "hover:bg-white/[0.04]",
-              !schedule.enabled && "opacity-40",
-            )}
-          >
-            <div className="relative shrink-0">
-              {first ? (
-                <ItemArtwork item={first} className="size-12 rounded-md shadow-md" iconClassName="size-5" />
-              ) : (
-                <div className="flex size-12 items-center justify-center rounded-md bg-white/[0.06]">
-                  <CalendarClockIcon className="size-5 text-muted-foreground" />
-                </div>
-              )}
-              <Hint label={schedule.mode === "play" ? "Tocar" : "Enfileirar"} side="top">
-                <span
-                  className={cn(
-                    "absolute -right-1.5 -bottom-1.5 flex size-5 items-center justify-center rounded-full shadow-md ring-2 ring-background",
-                    schedule.mode === "play" ? "bg-white" : "bg-zinc-600",
-                  )}
-                >
-                  {schedule.mode === "play" ? (
-                    <PlayIcon className="size-2.5 fill-current text-black" />
-                  ) : (
-                    <ListPlusIcon className="size-2.5 text-white" />
-                  )}
-                </span>
-              </Hint>
-            </div>
-
-            {!collapsed && (
-              <div className="flex min-w-0 flex-1 flex-col">
-                <div className="flex items-baseline gap-2">
-                  <span className="text-xs font-bold tabular-nums text-muted-foreground">{schedule.time}</span>
-                  <span className="truncate text-sm font-semibold text-foreground">{schedule.name}</span>
-                </div>
-                <span className="truncate text-xs text-muted-foreground">
-                  {formatDays(schedule.days)}
-                  {first && ` · ${first.name}`}
-                  {schedule.items.length > 1 && ` +${schedule.items.length - 1}`}
-                </span>
-              </div>
-            )}
-
-            <DropdownMenu>
-              {/* Recolhida, a capa inteira vira o gatilho do menu e o tooltip faz o papel do texto. */}
-              <Hint
-                label={collapsed ? `${schedule.time} · ${schedule.name}` : "Mais opções"}
-                shortcut={collapsed ? formatDays(schedule.days) : undefined}
-                side="right"
+          <ContextMenu key={schedule.id}>
+            <ContextMenuTrigger asChild>
+              <div
+                className={cn(
+                  "group relative flex items-center gap-3 rounded-lg transition-all data-[state=open]:bg-white/[0.06]",
+                  collapsed ? "p-1" : "p-2",
+                  isNext ? "bg-primary/[0.06]" : "hover:bg-white/[0.04]",
+                  !schedule.enabled && "opacity-40",
+                )}
               >
-                <DropdownMenuTrigger asChild>
-                  <button
-                    type="button"
-                    className={cn(
-                      "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-                      collapsed
-                        ? "absolute inset-0 rounded-lg"
-                        : "flex size-7 shrink-0 items-center justify-center rounded-full text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 hover:bg-white/[0.08] hover:text-foreground focus-visible:opacity-100 data-[state=open]:opacity-100",
-                    )}
-                    aria-label={`Ações de ${schedule.name}`}
+                <div className="relative shrink-0">
+                  {first ? (
+                    <ItemArtwork item={first} className="size-12 rounded-md shadow-md" iconClassName="size-5" />
+                  ) : (
+                    <div className="flex size-12 items-center justify-center rounded-md bg-white/[0.06]">
+                      <CalendarClockIcon className="size-5 text-muted-foreground" />
+                    </div>
+                  )}
+                  <Hint label={schedule.mode === "play" ? "Tocar" : "Enfileirar"} side="top">
+                    <span
+                      className={cn(
+                        "absolute -right-1.5 -bottom-1.5 flex size-5 items-center justify-center rounded-full shadow-md ring-2 ring-background",
+                        schedule.mode === "play" ? "bg-white" : "bg-zinc-600",
+                      )}
+                    >
+                      {schedule.mode === "play" ? (
+                        <PlayIcon className="size-2.5 fill-current text-black" />
+                      ) : (
+                        <ListPlusIcon className="size-2.5 text-white" />
+                      )}
+                    </span>
+                  </Hint>
+                </div>
+    
+                {!collapsed && (
+                  <div className="flex min-w-0 flex-1 flex-col">
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-xs font-bold tabular-nums text-muted-foreground">{schedule.time}</span>
+                      <span className="truncate text-sm font-semibold text-foreground">{schedule.name}</span>
+                    </div>
+                    <span className="truncate text-xs text-muted-foreground">
+                      {formatDays(schedule.days)}
+                      {first && ` · ${first.name}`}
+                      {schedule.items.length > 1 && ` +${schedule.items.length - 1}`}
+                    </span>
+                  </div>
+                )}
+    
+                <DropdownMenu>
+                  {/* Recolhida, a capa inteira vira o gatilho do menu e o tooltip faz o papel do texto. */}
+                  <Hint
+                    label={collapsed ? `${schedule.time} · ${schedule.name}` : "Mais opções"}
+                    shortcut={collapsed ? formatDays(schedule.days) : undefined}
+                    side="right"
                   >
-                    {!collapsed && <EllipsisIcon className="size-4" />}
-                  </button>
-                </DropdownMenuTrigger>
-              </Hint>
-              <DropdownMenuContent side="right" align="start">
-                <DropdownMenuItem onSelect={() => actions.onRunNow(schedule)}>
-                  <ZapIcon />
-                  Testar agora
-                </DropdownMenuItem>
-                <DropdownMenuItem onSelect={() => actions.onToggle(schedule, !schedule.enabled)}>
-                  {schedule.enabled ? <PauseIcon /> : <PlayIcon />}
-                  {schedule.enabled ? "Pausar" : "Ativar"}
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onSelect={() => actions.onEdit(schedule)}>
-                  <PencilIcon />
-                  Editar
-                </DropdownMenuItem>
-                <DropdownMenuItem onSelect={() => actions.onDuplicate(schedule)}>
-                  <CopyIcon />
-                  Duplicar
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem variant="destructive" onSelect={() => actions.onDelete(schedule)}>
-                  <Trash2Icon />
-                  Excluir
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
+                    <DropdownMenuTrigger asChild>
+                      <button
+                        type="button"
+                        className={cn(
+                          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                          collapsed
+                            ? "absolute inset-0 rounded-lg"
+                            : "flex size-7 shrink-0 items-center justify-center rounded-full text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 hover:bg-white/[0.08] hover:text-foreground focus-visible:opacity-100 data-[state=open]:opacity-100",
+                        )}
+                        aria-label={`Ações de ${schedule.name}`}
+                      >
+                        {!collapsed && <EllipsisIcon className="size-4" />}
+                      </button>
+                    </DropdownMenuTrigger>
+                  </Hint>
+                  <DropdownMenuContent side="right" align="start">
+                    <ScheduleMenuItems kit={dropdownKit} schedule={schedule} {...actions} />
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+            </ContextMenuTrigger>
+            <ContextMenuContent>
+              <ScheduleMenuItems kit={contextKit} schedule={schedule} {...actions} />
+            </ContextMenuContent>
+          </ContextMenu>
         )
       })}
     </div>
+  )
+}
+
+/** Mesmo menu no "⋯" e no clique direito do agendamento. */
+export function ScheduleMenuItems({
+  kit: { Item, Separator },
+  schedule,
+  ...actions
+}: { kit: MenuKit; schedule: Schedule } & ScheduleActions) {
+  return (
+    <>
+      <Item onSelect={() => actions.onRunNow(schedule)}>
+        <ZapIcon />
+        Testar agora
+      </Item>
+      <Item onSelect={() => actions.onToggle(schedule, !schedule.enabled)}>
+        {schedule.enabled ? <PauseIcon /> : <PlayIcon />}
+        {schedule.enabled ? "Pausar" : "Ativar"}
+      </Item>
+      <Separator />
+      <Item onSelect={() => actions.onEdit(schedule)}>
+        <PencilIcon />
+        Editar
+      </Item>
+      <Item onSelect={() => actions.onDuplicate(schedule)}>
+        <CopyIcon />
+        Duplicar
+      </Item>
+      <Separator />
+      <Item variant="destructive" onSelect={() => actions.onDelete(schedule)}>
+        <Trash2Icon />
+        Excluir
+      </Item>
+    </>
   )
 }
 
