@@ -15,6 +15,7 @@ import {
 } from "lucide-react"
 import { useTheme } from "next-themes"
 
+import appIcon from "@/assets/app-icon.svg"
 import { ItemArtwork } from "@/components/item-artwork"
 
 import {
@@ -65,7 +66,12 @@ export function AppSidebar({ schedules, now, spotify, onOpenAccount, ...actions 
 
   return (
     <Sidebar className="bg-black">
-      <SidebarContent className="gap-0 pt-2">
+      {/* Continua a barra de título do cabeçalho principal, na mesma altura. */}
+      <div data-tauri-drag-region className="flex h-14 shrink-0 items-center gap-2.5 px-5 select-none">
+        <img src={appIcon} alt="" className="pointer-events-none size-5" draggable={false} />
+        <span className="pointer-events-none text-sm font-semibold tracking-tight">Spotify Scheduler</span>
+      </div>
+      <SidebarContent className="gap-0">
         <SidebarGroup>
           <div className="flex items-center justify-between px-4 pt-4 pb-2">
             <span className="text-xs font-bold tracking-wider text-muted-foreground uppercase">Fila</span>
