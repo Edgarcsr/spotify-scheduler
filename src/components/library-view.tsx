@@ -1,6 +1,7 @@
 import { useState } from "react"
 import { CalendarPlusIcon, CheckIcon, ListPlusIcon, PlugIcon, SearchIcon, XIcon } from "lucide-react"
 
+import { Hint } from "@/components/hint"
 import { ItemArtwork } from "@/components/item-artwork"
 import { WindowControls } from "@/components/window-controls"
 import { Button } from "@/components/ui/button"
@@ -49,7 +50,9 @@ export function LibraryView({ connected, schedules, onConnect, onSchedule, onAdd
         data-tauri-drag-region
         className="sticky top-0 z-10 flex h-14 shrink-0 items-center gap-2 border-b bg-background/80 pl-4 backdrop-blur select-none"
       >
-        <SidebarTrigger className="-ml-1" />
+        <Hint label="Mostrar ou ocultar a fila" shortcut="Ctrl+B">
+          <SidebarTrigger className="-ml-1" aria-label="Mostrar ou ocultar a fila" />
+        </Hint>
         <Separator orientation="vertical" className="mr-2 data-vertical:h-4 data-vertical:self-center" />
         <InputGroup className="max-w-md">
           <InputGroupAddon>
@@ -63,9 +66,11 @@ export function LibraryView({ connected, schedules, onConnect, onSchedule, onAdd
           />
           {searching && (
             <InputGroupAddon align="inline-end">
-              <InputGroupButton size="icon-xs" aria-label="Limpar busca" onClick={() => setQuery("")}>
-                <XIcon />
-              </InputGroupButton>
+              <Hint label="Limpar busca">
+                <InputGroupButton size="icon-xs" aria-label="Limpar busca" onClick={() => setQuery("")}>
+                  <XIcon />
+                </InputGroupButton>
+              </Hint>
             </InputGroupAddon>
           )}
         </InputGroup>

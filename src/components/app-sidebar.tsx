@@ -16,6 +16,7 @@ import {
 import { useTheme } from "next-themes"
 
 import appIcon from "@/assets/app-icon.svg"
+import { Hint } from "@/components/hint"
 import { ItemArtwork } from "@/components/item-artwork"
 
 import {
@@ -30,7 +31,6 @@ import {
   SidebarContent,
   SidebarFooter,
   SidebarGroup,
-  SidebarGroupAction,
   SidebarGroupContent,
   SidebarRail,
 } from "@/components/ui/sidebar"
@@ -67,7 +67,8 @@ export function AppSidebar({ schedules, now, spotify, onOpenAccount, ...actions 
   return (
     <Sidebar className="bg-black">
       {/* Continua a barra de título do cabeçalho principal, na mesma altura. */}
-      <div data-tauri-drag-region className="flex h-14 shrink-0 items-center gap-2.5 px-5 select-none">
+      {/* Tudo na lateral alinha numa coluna a 24px da borda: marca, títulos, capas e avatar. */}
+      <div data-tauri-drag-region className="flex h-14 shrink-0 items-center gap-2.5 px-6 select-none">
         <img src={appIcon} alt="" className="pointer-events-none size-5" draggable={false} />
         <span className="pointer-events-none text-sm font-semibold tracking-tight">Spotify Scheduler</span>
       </div>
@@ -75,14 +76,16 @@ export function AppSidebar({ schedules, now, spotify, onOpenAccount, ...actions 
         <SidebarGroup>
           <div className="flex items-center justify-between px-4 pt-4 pb-2">
             <span className="text-xs font-bold tracking-wider text-muted-foreground uppercase">Fila</span>
-            <SidebarGroupAction
-              title="Novo agendamento (Ctrl+N)"
-              onClick={actions.onNew}
-              className="flex size-6 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-white/[0.08] hover:text-foreground"
-            >
-              <PlusIcon className="size-3.5" />
-              <span className="sr-only">Novo agendamento</span>
-            </SidebarGroupAction>
+            <Hint label="Novo agendamento" shortcut="Ctrl+N" side="right">
+              <button
+                type="button"
+                onClick={actions.onNew}
+                aria-label="Novo agendamento"
+                className="-mr-1 flex size-6 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-white/[0.08] hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                <PlusIcon className="size-3.5" />
+              </button>
+            </Hint>
           </div>
           <SidebarGroupContent>
             {active.length === 0 ? (
@@ -114,7 +117,7 @@ export function AppSidebar({ schedules, now, spotify, onOpenAccount, ...actions 
         )}
       </SidebarContent>
 
-      <SidebarFooter>
+      <SidebarFooter className="flex-row items-center gap-1 border-t border-white/[0.06] px-4 py-3">
         <AccountMenu spotify={spotify} onOpenAccount={onOpenAccount} />
       </SidebarFooter>
       <SidebarRail />
@@ -145,18 +148,20 @@ function ScheduleMenu({ schedules, ...actions }: { schedules: Schedule[] } & Sch
                   <CalendarClockIcon className="size-5 text-muted-foreground" />
                 </div>
               )}
-              <span
-                className={cn(
-                  "absolute -right-1.5 -bottom-1.5 flex size-5 items-center justify-center rounded-full shadow-md ring-2 ring-background",
-                  schedule.mode === "play" ? "bg-white" : "bg-zinc-600",
-                )}
-              >
-                {schedule.mode === "play" ? (
-                  <PlayIcon className="size-2.5 fill-current text-black" />
-                ) : (
-                  <ListPlusIcon className="size-2.5 text-white" />
-                )}
-              </span>
+              <Hint label={schedule.mode === "play" ? "Tocar" : "Enfileirar"} side="top">
+                <span
+                  className={cn(
+                    "absolute -right-1.5 -bottom-1.5 flex size-5 items-center justify-center rounded-full shadow-md ring-2 ring-background",
+                    schedule.mode === "play" ? "bg-white" : "bg-zinc-600",
+                  )}
+                >
+                  {schedule.mode === "play" ? (
+                    <PlayIcon className="size-2.5 fill-current text-black" />
+                  ) : (
+                    <ListPlusIcon className="size-2.5 text-white" />
+                  )}
+                </span>
+              </Hint>
             </div>
 
             <div className="flex min-w-0 flex-1 flex-col">
@@ -172,15 +177,17 @@ function ScheduleMenu({ schedules, ...actions }: { schedules: Schedule[] } & Sch
             </div>
 
             <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button
-                  type="button"
-                  className="flex size-7 shrink-0 items-center justify-center rounded-full text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 hover:bg-white/[0.08] hover:text-foreground focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                  aria-label={`Ações de ${schedule.name}`}
-                >
-                  <EllipsisIcon className="size-4" />
-                </button>
-              </DropdownMenuTrigger>
+              <Hint label="Mais opções" side="right">
+                <DropdownMenuTrigger asChild>
+                  <button
+                    type="button"
+                    className="flex size-7 shrink-0 items-center justify-center rounded-full text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 hover:bg-white/[0.08] hover:text-foreground focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring data-[state=open]:opacity-100"
+                    aria-label={`Ações de ${schedule.name}`}
+                  >
+                    <EllipsisIcon className="size-4" />
+                  </button>
+                </DropdownMenuTrigger>
+              </Hint>
               <DropdownMenuContent side="right" align="start">
                 <DropdownMenuItem onSelect={() => actions.onRunNow(schedule)}>
                   <ZapIcon />
@@ -213,60 +220,52 @@ function ScheduleMenu({ schedules, ...actions }: { schedules: Schedule[] } & Sch
   )
 }
 
+// Fica dentro do SidebarFooter, que já dá o recuo de 16px; o p-2 do botão completa os 24px da coluna.
 function AccountMenu({ spotify, onOpenAccount }: { spotify: SpotifyStatus | null; onOpenAccount: () => void }) {
   const { resolvedTheme, setTheme } = useTheme()
   const user = spotify?.user
+  const dark = resolvedTheme === "dark"
 
   return (
-    <div className="border-t border-white/[0.06] p-2">
-      <button
-        type="button"
-        onClick={onOpenAccount}
-        className="flex w-full items-center gap-3 rounded-lg p-2 text-left transition-colors hover:bg-white/[0.04]"
-      >
-        {user?.imageUrl ? (
-          <img
-            src={user.imageUrl}
-            alt=""
-            className="size-9 shrink-0 rounded-full object-cover ring-2 ring-white/10"
-          />
-        ) : (
-          <span
-            className={cn(
-              "flex size-9 shrink-0 items-center justify-center rounded-full",
-              user ? "bg-primary/15 text-primary" : "bg-white/[0.06] text-muted-foreground",
-            )}
-          >
-            <UserIcon className="size-4" />
-          </span>
-        )}
-        <span className="flex min-w-0 flex-1 flex-col">
-          <span className="truncate text-sm font-semibold text-foreground">
-            {user ? (user.displayName ?? user.id) : "Conectar Spotify"}
-          </span>
-          <span className="truncate text-xs text-muted-foreground">
-            {user ? "Conectado" : spotify?.error ? "Sessão expirada" : "Desconectado"}
-          </span>
-        </span>
-        <span
-          role="button"
-          tabIndex={0}
-          className="flex size-7 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-white/[0.08] hover:text-foreground"
-          onClick={(e) => {
-            e.stopPropagation()
-            setTheme(resolvedTheme === "dark" ? "light" : "dark")
-          }}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" || e.key === " ") {
-              e.stopPropagation()
-              setTheme(resolvedTheme === "dark" ? "light" : "dark")
-            }
-          }}
-          aria-label="Alternar tema"
+    <>
+      <Hint label={user ? "Conta do Spotify" : "Conectar ao Spotify"} side="top">
+        <button
+          type="button"
+          onClick={onOpenAccount}
+          className="flex min-w-0 flex-1 items-center gap-3 rounded-lg p-2 text-left transition-colors hover:bg-white/[0.04] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
-          {resolvedTheme === "dark" ? <SunIcon className="size-4" /> : <MoonIcon className="size-4" />}
-        </span>
-      </button>
-    </div>
+          {user?.imageUrl ? (
+            <img src={user.imageUrl} alt="" className="size-8 shrink-0 rounded-full object-cover ring-2 ring-white/10" />
+          ) : (
+            <span
+              className={cn(
+                "flex size-8 shrink-0 items-center justify-center rounded-full",
+                user ? "bg-primary/15 text-primary" : "bg-white/[0.06] text-muted-foreground",
+              )}
+            >
+              <UserIcon className="size-4" />
+            </span>
+          )}
+          <span className="flex min-w-0 flex-1 flex-col">
+            <span className="truncate text-sm font-semibold text-foreground">
+              {user ? (user.displayName ?? user.id) : "Conectar Spotify"}
+            </span>
+            <span className="truncate text-xs text-muted-foreground">
+              {user ? "Conectado" : spotify?.error ? "Sessão expirada" : "Desconectado"}
+            </span>
+          </span>
+        </button>
+      </Hint>
+      <Hint label={dark ? "Tema claro" : "Tema escuro"} side="top">
+        <button
+          type="button"
+          onClick={() => setTheme(dark ? "light" : "dark")}
+          aria-label={dark ? "Usar tema claro" : "Usar tema escuro"}
+          className="mr-2 flex size-7 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-white/[0.08] hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          {dark ? <SunIcon className="size-4" /> : <MoonIcon className="size-4" />}
+        </button>
+      </Hint>
+    </>
   )
 }

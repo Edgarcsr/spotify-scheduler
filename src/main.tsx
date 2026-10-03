@@ -9,7 +9,7 @@ import "./index.css";
 ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
   <React.StrictMode>
     <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
-      <TooltipProvider>
+      <TooltipProvider delayDuration={400} skipDelayDuration={300}>
         <App />
         <Toaster position="bottom-right" />
       </TooltipProvider>

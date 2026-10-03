@@ -3,6 +3,7 @@ import { CheckIcon, CopyIcon, ExternalLinkIcon, Loader2Icon, LogOutIcon, UserIco
 import { openUrl } from "@tauri-apps/plugin-opener"
 import { toast } from "sonner"
 
+import { Hint } from "@/components/hint"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -146,9 +147,11 @@ function Setup({
           <InputGroup>
             <InputGroupInput id="redirect-uri" readOnly value={redirectUri} className="font-mono text-xs" />
             <InputGroupAddon align="inline-end">
-              <InputGroupButton size="icon-xs" aria-label="Copiar" onClick={copyRedirect}>
-                {copied ? <CheckIcon /> : <CopyIcon />}
-              </InputGroupButton>
+              <Hint label={copied ? "Copiado" : "Copiar"}>
+                <InputGroupButton size="icon-xs" aria-label="Copiar" onClick={copyRedirect}>
+                  {copied ? <CheckIcon /> : <CopyIcon />}
+                </InputGroupButton>
+              </Hint>
             </InputGroupAddon>
           </InputGroup>
         </Field>

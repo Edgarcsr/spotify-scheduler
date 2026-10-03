@@ -1,6 +1,7 @@
 import { useState } from "react"
 import { XIcon } from "lucide-react"
 
+import { Hint } from "@/components/hint"
 import { ItemArtwork } from "@/components/item-artwork"
 import { SourcePicker } from "@/components/source-picker"
 import { Button } from "@/components/ui/button"
@@ -217,15 +218,17 @@ function ScheduleForm({ initial, isNew, onCancel, onSave }: ScheduleFormProps) {
                     <span className="truncate font-medium">{item.name}</span>
                     <span className="truncate text-xs text-muted-foreground">{item.subtitle}</span>
                   </div>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon-sm"
-                    aria-label={`Remover ${item.name}`}
-                    onClick={() => update("items", draft.items.filter((i) => i.uri !== item.uri))}
-                  >
-                    <XIcon />
-                  </Button>
+                  <Hint label="Remover" side="left">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon-sm"
+                      aria-label={`Remover ${item.name}`}
+                      onClick={() => update("items", draft.items.filter((i) => i.uri !== item.uri))}
+                    >
+                      <XIcon />
+                    </Button>
+                  </Hint>
                 </li>
               ))}
             </ul>

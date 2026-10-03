@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react"
 import { getCurrentWindow } from "@tauri-apps/api/window"
 
+import { Hint } from "@/components/hint"
 import { cn } from "@/lib/utils"
 
 const appWindow = getCurrentWindow()
@@ -53,20 +54,21 @@ function CaptionButton({
   ...props
 }: { label: string } & React.ComponentProps<"button">) {
   return (
-    <button
-      type="button"
-      title={label}
-      aria-label={label}
-      tabIndex={-1}
-      className={cn(
-        "flex h-full w-12 items-center justify-center text-muted-foreground transition-colors hover:bg-foreground/[0.08] hover:text-foreground active:bg-foreground/[0.12]",
-        className,
-      )}
-      {...props}
-    >
-      <svg viewBox="0 0 10 10" className="size-2.5" fill="none" stroke="currentColor" strokeWidth="1" aria-hidden>
-        {children}
-      </svg>
-    </button>
+    <Hint label={label}>
+      <button
+        type="button"
+        aria-label={label}
+        tabIndex={-1}
+        className={cn(
+          "flex h-full w-12 items-center justify-center text-muted-foreground transition-colors hover:bg-foreground/[0.08] hover:text-foreground active:bg-foreground/[0.12]",
+          className,
+        )}
+        {...props}
+      >
+        <svg viewBox="0 0 10 10" className="size-2.5" fill="none" stroke="currentColor" strokeWidth="1" aria-hidden>
+          {children}
+        </svg>
+      </button>
+    </Hint>
   )
 }
