@@ -17,7 +17,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
@@ -27,10 +27,28 @@ jobs:
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
 
+      # Tags não enxergam o cache umas das outras, só o da branch padrão. Quem mantém esse
+      # cache é o workflow "Warm cache" (warm-cache.yml) na master; aqui só restauramos.
       - name: Cache Rust build
         uses: Swatinem/rust-cache@v2
         with:
           workspaces: src-tauri -> target
+          shared-key: release
+          save-if: ${{ github.ref == 'refs/heads/master' }}
+
+      - name: Cache Bun packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.bun/install/cache
+          key: bun-${{ runner.os }}-${{ hashFiles('bun.lock') }}
+          restore-keys: bun-${{ runner.os }}-
+
+      # WiX (.msi) e NSIS (setup.exe) que o bundler do Tauri baixa a cada build.
+      - name: Cache Tauri bundler tools
+        uses: actions/cache@v4
+        with:
+          path: ~/AppData/Local/tauri
+          key: tauri-bundler-tools-${{ runner.os }}-v2
 
       - name: Install dependencies
         run: bun install --frozen-lockfile

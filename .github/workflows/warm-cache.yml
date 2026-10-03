@@ -1,0 +1,62 @@
+name: Warm cache
+
+# Caches salvos numa tag só servem àquela tag; os da master servem a todas as execuções.
+# Este workflow compila o release na master sempre que as dependências mudam, para que o
+# workflow Release (disparado por tags) já encontre tudo compilado.
+on:
+  push:
+    branches: [master]
+    paths:
+      - src-tauri/Cargo.lock
+      - src-tauri/Cargo.toml
+      - bun.lock
+      - .github/workflows/warm-cache.yml
+      - .github/workflows/release.yml
+  workflow_dispatch:
+
+concurrency:
+  group: warm-cache
+  cancel-in-progress: true
+
+jobs:
+  warm:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      # Mesmo shared-key do Release, para a chave bater.
+      - name: Cache Rust build
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri -> target
+          shared-key: release
+
+      - name: Cache Bun packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.bun/install/cache
+          key: bun-${{ runner.os }}-${{ hashFiles('bun.lock') }}
+          restore-keys: bun-${{ runner.os }}-
+
+      - name: Cache Tauri bundler tools
+        uses: actions/cache@v4
+        with:
+          path: ~/AppData/Local/tauri
+          key: tauri-bundler-tools-${{ runner.os }}-v2
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      # Mesmo comando que o tauri-action roda (com as features de produção), para as
+      # dependências compiladas aqui servirem lá. O bundle completo baixa WiX e NSIS.
+      - name: Build
+        run: bun tauri build
