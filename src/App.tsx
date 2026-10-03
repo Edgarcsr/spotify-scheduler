@@ -118,7 +118,7 @@ function App() {
   }
 
   return (
-    <SidebarProvider style={{ "--sidebar-width": "19rem" } as React.CSSProperties}>
+    <SidebarProvider style={{ "--sidebar-width": "19rem", "--sidebar-width-icon": "4.5rem" } as React.CSSProperties}>
       <AppSidebar
         schedules={schedules}
         now={now}

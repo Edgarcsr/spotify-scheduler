@@ -33,6 +33,7 @@ import {
   SidebarGroup,
   SidebarGroupContent,
   SidebarRail,
+  useSidebar,
 } from "@/components/ui/sidebar"
 import type { SpotifyStatus } from "@/lib/api"
 import { formatDays, nextOccurrence } from "@/lib/schedule"
@@ -63,71 +64,98 @@ export function AppSidebar({ schedules, now, spotify, onOpenAccount, ...actions 
     .sort((a, b) => (a.at?.getTime() ?? Infinity) - (b.at?.getTime() ?? Infinity))
     .map((entry) => entry.schedule)
   const paused = schedules.filter((s) => !s.enabled).sort((a, b) => a.time.localeCompare(b.time))
+  // Recolhida, a lateral vira uma coluna de 72px com as capas centralizadas (12px de cada lado).
+  const collapsed = useSidebar().state === "collapsed"
 
   return (
-    <Sidebar className="bg-black">
+    <Sidebar collapsible="icon" className="bg-black">
       {/* Continua a barra de título do cabeçalho principal, na mesma altura. */}
-      {/* Tudo na lateral alinha numa coluna a 24px da borda: marca, títulos, capas e avatar. */}
-      <div data-tauri-drag-region className="flex h-14 shrink-0 items-center gap-2.5 px-6 select-none">
+      {/* Aberta, tudo alinha numa coluna a 24px da borda: marca, títulos, capas e avatar. */}
+      <div
+        data-tauri-drag-region
+        className={cn("flex h-14 shrink-0 items-center gap-2.5 select-none", collapsed ? "justify-center" : "px-6")}
+      >
         <img src={appIcon} alt="" className="pointer-events-none size-5" draggable={false} />
-        <span className="pointer-events-none text-sm font-semibold tracking-tight">Spotify Scheduler</span>
+        {!collapsed && (
+          <span className="pointer-events-none truncate text-sm font-semibold tracking-tight">Spotify Scheduler</span>
+        )}
       </div>
-      <SidebarContent className="gap-0">
+      <SidebarContent className="gap-0 group-data-[collapsible=icon]:overflow-auto">
         <SidebarGroup>
-          <div className="flex items-center justify-between px-4 pt-4 pb-2">
-            <span className="text-xs font-bold tracking-wider text-muted-foreground uppercase">Fila</span>
+          <div className={cn("flex items-center pt-4 pb-2", collapsed ? "justify-center" : "justify-between px-4")}>
+            {!collapsed && (
+              <span className="text-xs font-bold tracking-wider text-muted-foreground uppercase">Fila</span>
+            )}
             <Hint label="Novo agendamento" shortcut="Ctrl+N" side="right">
               <button
                 type="button"
                 onClick={actions.onNew}
                 aria-label="Novo agendamento"
-                className="-mr-1 flex size-6 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-white/[0.08] hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                className={cn(
+                  "flex items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-white/[0.08] hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                  collapsed ? "size-8 bg-white/[0.04]" : "-mr-1 size-6",
+                )}
               >
-                <PlusIcon className="size-3.5" />
+                <PlusIcon className={collapsed ? "size-4" : "size-3.5"} />
               </button>
             </Hint>
           </div>
           <SidebarGroupContent>
-            {active.length === 0 ? (
-              <div className="flex flex-col items-center gap-2 px-4 py-8 text-center">
-                <div className="flex size-12 items-center justify-center rounded-full bg-white/[0.04]">
-                  <CalendarClockIcon className="size-5 text-muted-foreground" />
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  {schedules.length === 0
-                    ? "Nenhum agendamento ainda.\nEscolha uma playlist ao lado para começar."
-                    : "Nenhum agendamento ativo."}
-                </p>
-              </div>
+            {active.length > 0 ? (
+              <ScheduleMenu schedules={active} collapsed={collapsed} {...actions} />
             ) : (
-              <ScheduleMenu schedules={active} {...actions} />
+              !collapsed && (
+                <div className="flex flex-col items-center gap-2 px-4 py-8 text-center">
+                  <div className="flex size-12 items-center justify-center rounded-full bg-white/[0.04]">
+                    <CalendarClockIcon className="size-5 text-muted-foreground" />
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    {schedules.length === 0
+                      ? "Nenhum agendamento ainda.\nEscolha uma playlist ao lado para começar."
+                      : "Nenhum agendamento ativo."}
+                  </p>
+                </div>
+              )
             )}
           </SidebarGroupContent>
         </SidebarGroup>
 
         {paused.length > 0 && (
           <SidebarGroup>
-            <div className="px-4 pt-4 pb-2">
-              <span className="text-xs font-bold tracking-wider text-muted-foreground uppercase">Pausados</span>
-            </div>
+            {collapsed ? (
+              <div className="mx-3 mt-2 mb-3 h-px bg-white/[0.08]" aria-hidden />
+            ) : (
+              <div className="px-4 pt-4 pb-2">
+                <span className="text-xs font-bold tracking-wider text-muted-foreground uppercase">Pausados</span>
+              </div>
+            )}
             <SidebarGroupContent>
-              <ScheduleMenu schedules={paused} {...actions} />
+              <ScheduleMenu schedules={paused} collapsed={collapsed} {...actions} />
             </SidebarGroupContent>
           </SidebarGroup>
         )}
       </SidebarContent>
 
-      <SidebarFooter className="flex-row items-center gap-1 border-t border-white/[0.06] px-4 py-3">
-        <AccountMenu spotify={spotify} onOpenAccount={onOpenAccount} />
+      <SidebarFooter
+        className={cn(
+          "items-center gap-1 border-t border-white/[0.06] py-3",
+          collapsed ? "flex-col px-0" : "flex-row px-4",
+        )}
+      >
+        <AccountMenu spotify={spotify} collapsed={collapsed} onOpenAccount={onOpenAccount} />
       </SidebarFooter>
       <SidebarRail />
     </Sidebar>
   )
 }
 
-function ScheduleMenu({ schedules, ...actions }: { schedules: Schedule[] } & ScheduleActions) {
+function ScheduleMenu({
+  schedules,
+  collapsed,
+  ...actions
+}: { schedules: Schedule[]; collapsed: boolean } & ScheduleActions) {
   return (
-    <div className="flex flex-col gap-1 px-2">
+    <div className={cn("flex flex-col gap-1", !collapsed && "px-2")}>
       {schedules.map((schedule, index) => {
         const first = schedule.items[0]
         const isNext = index === 0
@@ -135,7 +163,8 @@ function ScheduleMenu({ schedules, ...actions }: { schedules: Schedule[] } & Sch
           <div
             key={schedule.id}
             className={cn(
-              "group relative flex items-center gap-3 rounded-lg p-2 transition-all",
+              "group relative flex items-center gap-3 rounded-lg transition-all",
+              collapsed ? "p-1" : "p-2",
               isNext ? "bg-primary/[0.06]" : "hover:bg-white/[0.04]",
               !schedule.enabled && "opacity-40",
             )}
@@ -164,27 +193,39 @@ function ScheduleMenu({ schedules, ...actions }: { schedules: Schedule[] } & Sch
               </Hint>
             </div>
 
-            <div className="flex min-w-0 flex-1 flex-col">
-              <div className="flex items-baseline gap-2">
-                <span className="text-xs font-bold tabular-nums text-muted-foreground">{schedule.time}</span>
-                <span className="truncate text-sm font-semibold text-foreground">{schedule.name}</span>
+            {!collapsed && (
+              <div className="flex min-w-0 flex-1 flex-col">
+                <div className="flex items-baseline gap-2">
+                  <span className="text-xs font-bold tabular-nums text-muted-foreground">{schedule.time}</span>
+                  <span className="truncate text-sm font-semibold text-foreground">{schedule.name}</span>
+                </div>
+                <span className="truncate text-xs text-muted-foreground">
+                  {formatDays(schedule.days)}
+                  {first && ` · ${first.name}`}
+                  {schedule.items.length > 1 && ` +${schedule.items.length - 1}`}
+                </span>
               </div>
-              <span className="truncate text-xs text-muted-foreground">
-                {formatDays(schedule.days)}
-                {first && ` · ${first.name}`}
-                {schedule.items.length > 1 && ` +${schedule.items.length - 1}`}
-              </span>
-            </div>
+            )}
 
             <DropdownMenu>
-              <Hint label="Mais opções" side="right">
+              {/* Recolhida, a capa inteira vira o gatilho do menu e o tooltip faz o papel do texto. */}
+              <Hint
+                label={collapsed ? `${schedule.time} · ${schedule.name}` : "Mais opções"}
+                shortcut={collapsed ? formatDays(schedule.days) : undefined}
+                side="right"
+              >
                 <DropdownMenuTrigger asChild>
                   <button
                     type="button"
-                    className="flex size-7 shrink-0 items-center justify-center rounded-full text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 hover:bg-white/[0.08] hover:text-foreground focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring data-[state=open]:opacity-100"
+                    className={cn(
+                      "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                      collapsed
+                        ? "absolute inset-0 rounded-lg"
+                        : "flex size-7 shrink-0 items-center justify-center rounded-full text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 hover:bg-white/[0.08] hover:text-foreground focus-visible:opacity-100 data-[state=open]:opacity-100",
+                    )}
                     aria-label={`Ações de ${schedule.name}`}
                   >
-                    <EllipsisIcon className="size-4" />
+                    {!collapsed && <EllipsisIcon className="size-4" />}
                   </button>
                 </DropdownMenuTrigger>
               </Hint>
@@ -221,18 +262,30 @@ function ScheduleMenu({ schedules, ...actions }: { schedules: Schedule[] } & Sch
 }
 
 // Fica dentro do SidebarFooter, que já dá o recuo de 16px; o p-2 do botão completa os 24px da coluna.
-function AccountMenu({ spotify, onOpenAccount }: { spotify: SpotifyStatus | null; onOpenAccount: () => void }) {
+function AccountMenu({
+  spotify,
+  collapsed,
+  onOpenAccount,
+}: {
+  spotify: SpotifyStatus | null
+  collapsed: boolean
+  onOpenAccount: () => void
+}) {
   const { resolvedTheme, setTheme } = useTheme()
   const user = spotify?.user
   const dark = resolvedTheme === "dark"
 
   return (
     <>
-      <Hint label={user ? "Conta do Spotify" : "Conectar ao Spotify"} side="top">
+      <Hint label={user ? "Conta do Spotify" : "Conectar ao Spotify"} side={collapsed ? "right" : "top"}>
         <button
           type="button"
           onClick={onOpenAccount}
-          className="flex min-w-0 flex-1 items-center gap-3 rounded-lg p-2 text-left transition-colors hover:bg-white/[0.04] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          aria-label={collapsed ? (user ? "Conta do Spotify" : "Conectar ao Spotify") : undefined}
+          className={cn(
+            "flex min-w-0 items-center gap-3 rounded-lg text-left transition-colors hover:bg-white/[0.04] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+            collapsed ? "p-1" : "flex-1 p-2",
+          )}
         >
           {user?.imageUrl ? (
             <img src={user.imageUrl} alt="" className="size-8 shrink-0 rounded-full object-cover ring-2 ring-white/10" />
@@ -246,22 +299,24 @@ function AccountMenu({ spotify, onOpenAccount }: { spotify: SpotifyStatus | null
               <UserIcon className="size-4" />
             </span>
           )}
-          <span className="flex min-w-0 flex-1 flex-col">
-            <span className="truncate text-sm font-semibold text-foreground">
-              {user ? (user.displayName ?? user.id) : "Conectar Spotify"}
+          {!collapsed && (
+            <span className="flex min-w-0 flex-1 flex-col">
+              <span className="truncate text-sm font-semibold text-foreground">
+                {user ? (user.displayName ?? user.id) : "Conectar Spotify"}
+              </span>
+              <span className="truncate text-xs text-muted-foreground">
+                {user ? "Conectado" : spotify?.error ? "Sessão expirada" : "Desconectado"}
+              </span>
             </span>
-            <span className="truncate text-xs text-muted-foreground">
-              {user ? "Conectado" : spotify?.error ? "Sessão expirada" : "Desconectado"}
-            </span>
-          </span>
+          )}
         </button>
       </Hint>
-      <Hint label={dark ? "Tema claro" : "Tema escuro"} side="top">
+      <Hint label={dark ? "Tema claro" : "Tema escuro"} side={collapsed ? "right" : "top"}>
         <button
           type="button"
           onClick={() => setTheme(dark ? "light" : "dark")}
           aria-label={dark ? "Usar tema claro" : "Usar tema escuro"}
-          className="mr-2 flex size-7 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-white/[0.08] hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          className={cn(collapsed ? "" : "mr-2", "flex size-7 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-white/[0.08] hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring")}
         >
           {dark ? <SunIcon className="size-4" /> : <MoonIcon className="size-4" />}
         </button>
