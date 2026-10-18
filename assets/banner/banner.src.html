@@ -20,9 +20,12 @@
 
       * { box-sizing: border-box; margin: 0; }
 
-      html, body { width: 1200px; height: 630px; overflow: hidden; background: var(--bg); color: var(--fg); font-family: var(--font); }
+      html, body { width: 1200px; height: 630px; overflow: hidden; background: transparent; color: var(--fg); font-family: var(--font); }
 
-      .banner { position: relative; width: 1200px; height: 630px; overflow: hidden; }
+      .banner { position: relative; width: 1200px; height: 630px; overflow: hidden;
+        /* Small rounded outer corners; the PNG is rendered with a transparent background. */
+        background: var(--bg);
+        border-radius: 16px; }
       #art { position: absolute; inset: 0; z-index: 0; }
       .glow {
         position: absolute; inset: 0; z-index: 0;
