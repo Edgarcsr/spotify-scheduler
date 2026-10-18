@@ -22,3 +22,7 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Banner: third-party album art stays local (see assets/banner/CREDITS.md); banner.html embeds it
+assets/banner/albums/*.jpg
+assets/banner/banner.html
